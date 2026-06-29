@@ -144,6 +144,20 @@ struct HfTaskSingleElectron {
     histos.add("hDcaXYTrack", "", kTH1D, {{600, -3, 3}});
     histos.add("hDcaZTrack", "", kTH1D, {{600, -3, 3}});
 
+    // ===== [pre-cut QA] BEGIN: track-quality distributions BEFORE trackSel (all charged tracks), for data/MC comparison =====
+    histos.add("hEtaTrack_noCut", "#eta before track sel; #eta; entries", kTH1D, {axisEta});
+    histos.add("hPtTrack_noCut", "#it{p}_{T} before track sel; #it{p}_{T} (GeV/#it{c}); entries", kTH1D, {axisPt});
+    histos.add("hNClsTpcTrack_noCut", "TPC crossed rows before track sel; N_{crossed rows}^{TPC}; entries", kTH1D, {{200, 0, 200}});
+    histos.add("hNClsFoundFindableTpcTrack_noCut", "TPC crossed-rows/findable before track sel; N_{crossed rows}/N_{findable}; entries", kTH1D, {{110, 0, 1.1}});
+    histos.add("hChi2TpcTrack_noCut", "TPC #chi^{2}/cluster before track sel; #chi^{2}/N_{cls}^{TPC}; entries", kTH1D, {{100, 0, 10}});
+    histos.add("hIbClsItsTrack_noCut", "ITS IB clusters before track sel; N_{cls}^{ITS-IB}; entries", kTH1D, {{10, 0, 10}});
+    histos.add("hChi2ItsTrack_noCut", "ITS #chi^{2}/cluster before track sel; #chi^{2}/N_{cls}^{ITS}; entries", kTH1D, {{50, 0, 50}});
+    histos.add("hDcaXYTrack_noCut", "DCA_{xy} before track sel; DCA_{xy} (cm); entries", kTH1D, {{600, -3, 3}});
+    histos.add("hDcaZTrack_noCut", "DCA_{z} before track sel; DCA_{z} (cm); entries", kTH1D, {{600, -3, 3}});
+    histos.add("hTpcNSigPt_noCut", "TPC n#sigma_{e} before track sel; #it{p}_{T} (GeV/#it{c}); n#sigma_{e}^{TPC}", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("hTofNSigPt_noCut", "TOF n#sigma_{e} before track sel; #it{p}_{T} (GeV/#it{c}); n#sigma_{e}^{TOF}", kTH2D, {{axisPtEl}, {axisNsig}});
+    // ===== [pre-cut QA] END =====
+
     // pid
     histos.add("hTofNSigPt", "", kTH2D, {{axisPtEl}, {axisNsig}});
     histos.add("hTofNSigPtQA", "", kTH2D, {{axisPtEl}, {axisNsig}});
@@ -436,6 +450,20 @@ struct HfTaskSingleElectron {
 
     for (const auto& track : tracks) {
 
+      // ===== [pre-cut QA] BEGIN: fill track-quality distributions BEFORE trackSel (all charged tracks) =====
+      histos.fill(HIST("hEtaTrack_noCut"), track.eta());
+      histos.fill(HIST("hPtTrack_noCut"), track.pt());
+      histos.fill(HIST("hNClsTpcTrack_noCut"), track.tpcNClsCrossedRows());
+      histos.fill(HIST("hNClsFoundFindableTpcTrack_noCut"), track.tpcCrossedRowsOverFindableCls());
+      histos.fill(HIST("hChi2TpcTrack_noCut"), track.tpcChi2NCl());
+      histos.fill(HIST("hIbClsItsTrack_noCut"), track.itsNClsInnerBarrel());
+      histos.fill(HIST("hChi2ItsTrack_noCut"), track.itsChi2NCl());
+      histos.fill(HIST("hDcaXYTrack_noCut"), track.dcaXY());
+      histos.fill(HIST("hDcaZTrack_noCut"), track.dcaZ());
+      histos.fill(HIST("hTpcNSigPt_noCut"), track.pt(), track.tpcNSigmaEl());
+      histos.fill(HIST("hTofNSigPt_noCut"), track.pt(), track.tofNSigmaEl());
+      // ===== [pre-cut QA] END =====
+
       if (!trackSel(track)) {
         continue;
       }
@@ -500,6 +528,20 @@ struct HfTaskSingleElectron {
     histos.fill(HIST("hNEvents"), flagAnalysedEvt);
 
     for (const auto& track : tracks) {
+
+      // ===== [pre-cut QA] BEGIN: fill track-quality distributions BEFORE trackSel (all charged tracks) =====
+      histos.fill(HIST("hEtaTrack_noCut"), track.eta());
+      histos.fill(HIST("hPtTrack_noCut"), track.pt());
+      histos.fill(HIST("hNClsTpcTrack_noCut"), track.tpcNClsCrossedRows());
+      histos.fill(HIST("hNClsFoundFindableTpcTrack_noCut"), track.tpcCrossedRowsOverFindableCls());
+      histos.fill(HIST("hChi2TpcTrack_noCut"), track.tpcChi2NCl());
+      histos.fill(HIST("hIbClsItsTrack_noCut"), track.itsNClsInnerBarrel());
+      histos.fill(HIST("hChi2ItsTrack_noCut"), track.itsChi2NCl());
+      histos.fill(HIST("hDcaXYTrack_noCut"), track.dcaXY());
+      histos.fill(HIST("hDcaZTrack_noCut"), track.dcaZ());
+      histos.fill(HIST("hTpcNSigPt_noCut"), track.pt(), track.tpcNSigmaEl());
+      histos.fill(HIST("hTofNSigPt_noCut"), track.pt(), track.tofNSigmaEl());
+      // ===== [pre-cut QA] END =====
 
       if (!trackSel(track)) {
         continue;
