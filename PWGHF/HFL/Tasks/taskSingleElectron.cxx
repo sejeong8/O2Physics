@@ -103,8 +103,8 @@ struct HfTaskSingleElectron {
 
   // using declarations
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
-  using TracksEl = soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::TracksDCA, aod::pidTOFFullEl, aod::pidTPCFullEl>;
-  using McTracksEl = soa::Join<aod::Tracks, aod::TrackExtra, aod::TracksDCA, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::McTrackLabels>;
+  using TracksEl = soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::TracksDCA, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::pidTOFbeta>;
+  using McTracksEl = soa::Join<aod::Tracks, aod::TrackExtra, aod::TracksDCA, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::McTrackLabels, aod::pidTOFbeta>;
 
   // Filter
   Filter collZFilter = nabs(aod::collision::posZ) < posZMax;
@@ -128,6 +128,8 @@ struct HfTaskSingleElectron {
     const AxisSpec axisPt{nBinsPt, 0., 15., "p_{T}"};
     const AxisSpec axisNsig{800, -20., 20.};
     const AxisSpec axisTrackIp{4000, -0.2, 0.2, "dca"};
+    const AxisSpec axisBeta{600, 0., 1.2, "#beta"};                  // reused from work/32 tof_quality_study
+    const AxisSpec axisBetaP{300, 0., 12., "p (GeV/#it{c})"};        // coarser p axis for beta 2D (species split)
 
     // create histograms
     histos.add("hNEvents", "Number of events", kTH1D, {{1, 0., 1.}});
@@ -171,6 +173,18 @@ struct HfTaskSingleElectron {
     histos.add("hTpcNSigPt_noCut_Pro", "n#sigma_{e}^{TPC} truth p before track sel; #it{p}_{T} (GeV/#it{c}); n#sigma_{e}^{TPC}", kTH2D, {axisPtEl, axisNsig});
     histos.add("hTpcNSigPt_noCut_Other", "n#sigma_{e}^{TPC} truth other before track sel; #it{p}_{T} (GeV/#it{c}); n#sigma_{e}^{TPC}", kTH2D, {axisPtEl, axisNsig});
     histos.add("hDcaZBeauty_noCut", "DCA_{z} of beauty-decay electrons (truth) before track sel; DCA_{z} (cm); entries", kTH1D, {{600, -3, 3}}); // DCA_z signal-loss check
+    // TOF beta vs p (reused from work/32 tof_quality_study) + TOF nSigma / beta truth-species
+    histos.add("hTofBetaP_noCut", "TOF #beta vs p before track sel; p (GeV/#it{c}); #beta", kTH2D, {axisBetaP, axisBeta});
+    histos.add("hTofNSigPt_noCut_Ele", "TOF n#sigma_{e} truth e before track sel; #it{p}_{T} (GeV/#it{c}); n#sigma_{e}^{TOF}", kTH2D, {axisPtEl, axisNsig});
+    histos.add("hTofNSigPt_noCut_Pi", "TOF n#sigma_{e} truth #pi before track sel; #it{p}_{T} (GeV/#it{c}); n#sigma_{e}^{TOF}", kTH2D, {axisPtEl, axisNsig});
+    histos.add("hTofNSigPt_noCut_K", "TOF n#sigma_{e} truth K before track sel; #it{p}_{T} (GeV/#it{c}); n#sigma_{e}^{TOF}", kTH2D, {axisPtEl, axisNsig});
+    histos.add("hTofNSigPt_noCut_Pro", "TOF n#sigma_{e} truth p before track sel; #it{p}_{T} (GeV/#it{c}); n#sigma_{e}^{TOF}", kTH2D, {axisPtEl, axisNsig});
+    histos.add("hTofNSigPt_noCut_Other", "TOF n#sigma_{e} truth other before track sel; #it{p}_{T} (GeV/#it{c}); n#sigma_{e}^{TOF}", kTH2D, {axisPtEl, axisNsig});
+    histos.add("hTofBetaP_noCut_Ele", "TOF #beta truth e before track sel; p (GeV/#it{c}); #beta", kTH2D, {axisBetaP, axisBeta});
+    histos.add("hTofBetaP_noCut_Pi", "TOF #beta truth #pi before track sel; p (GeV/#it{c}); #beta", kTH2D, {axisBetaP, axisBeta});
+    histos.add("hTofBetaP_noCut_K", "TOF #beta truth K before track sel; p (GeV/#it{c}); #beta", kTH2D, {axisBetaP, axisBeta});
+    histos.add("hTofBetaP_noCut_Pro", "TOF #beta truth p before track sel; p (GeV/#it{c}); #beta", kTH2D, {axisBetaP, axisBeta});
+    histos.add("hTofBetaP_noCut_Other", "TOF #beta truth other before track sel; p (GeV/#it{c}); #beta", kTH2D, {axisBetaP, axisBeta});
     // ===== [pre-cut QA 2D + species] END =====
 
     // pid
@@ -481,6 +495,7 @@ struct HfTaskSingleElectron {
       histos.fill(HIST("hNClsCrossedRowsEta_noCut"), track.eta(), track.tpcNClsCrossedRows());
       histos.fill(HIST("hDcaXYIbClsIts_noCut"), track.itsNClsInnerBarrel(), track.dcaXY());
       histos.fill(HIST("hTpcNSigNClsCrossedRows_noCut"), track.pt(), track.tpcNClsCrossedRows(), track.tpcNSigmaEl());
+      histos.fill(HIST("hTofBetaP_noCut"), track.p(), track.beta());
       // ===== [pre-cut QA] END =====
 
       if (!trackSel(track)) {
@@ -564,20 +579,31 @@ struct HfTaskSingleElectron {
       histos.fill(HIST("hNClsCrossedRowsEta_noCut"), track.eta(), track.tpcNClsCrossedRows());
       histos.fill(HIST("hDcaXYIbClsIts_noCut"), track.itsNClsInnerBarrel(), track.dcaXY());
       histos.fill(HIST("hTpcNSigNClsCrossedRows_noCut"), track.pt(), track.tpcNClsCrossedRows(), track.tpcNSigmaEl());
-      // MC-truth species before trackSel (reused from work/15 MCInformation_forEID)
+      histos.fill(HIST("hTofBetaP_noCut"), track.p(), track.beta());
+      // MC-truth species before trackSel (TPC nSig from work/15 MCInformation_forEID; TOF nSig/beta from work/32 tof_quality_study)
       if (track.has_mcParticle()) {
         auto const mcParticleNoCut = track.mcParticle();
         int const absPdgNoCut = std::abs(mcParticleNoCut.pdgCode());
         if (absPdgNoCut == kElectron) {
           histos.fill(HIST("hTpcNSigPt_noCut_Ele"), track.pt(), track.tpcNSigmaEl());
+          histos.fill(HIST("hTofNSigPt_noCut_Ele"), track.pt(), track.tofNSigmaEl());
+          histos.fill(HIST("hTofBetaP_noCut_Ele"), track.p(), track.beta());
         } else if (absPdgNoCut == kPiPlus) {
           histos.fill(HIST("hTpcNSigPt_noCut_Pi"), track.pt(), track.tpcNSigmaEl());
+          histos.fill(HIST("hTofNSigPt_noCut_Pi"), track.pt(), track.tofNSigmaEl());
+          histos.fill(HIST("hTofBetaP_noCut_Pi"), track.p(), track.beta());
         } else if (absPdgNoCut == kKPlus) {
           histos.fill(HIST("hTpcNSigPt_noCut_K"), track.pt(), track.tpcNSigmaEl());
+          histos.fill(HIST("hTofNSigPt_noCut_K"), track.pt(), track.tofNSigmaEl());
+          histos.fill(HIST("hTofBetaP_noCut_K"), track.p(), track.beta());
         } else if (absPdgNoCut == kProton) {
           histos.fill(HIST("hTpcNSigPt_noCut_Pro"), track.pt(), track.tpcNSigmaEl());
+          histos.fill(HIST("hTofNSigPt_noCut_Pro"), track.pt(), track.tofNSigmaEl());
+          histos.fill(HIST("hTofBetaP_noCut_Pro"), track.p(), track.beta());
         } else {
           histos.fill(HIST("hTpcNSigPt_noCut_Other"), track.pt(), track.tpcNSigmaEl());
+          histos.fill(HIST("hTofNSigPt_noCut_Other"), track.pt(), track.tofNSigmaEl());
+          histos.fill(HIST("hTofBetaP_noCut_Other"), track.p(), track.beta());
         }
         int mpdgNoCut{};
         double mptNoCut{};
