@@ -158,6 +158,21 @@ struct HfTaskSingleElectron {
     histos.add("hTofNSigPt_noCut", "TOF n#sigma_{e} before track sel; #it{p}_{T} (GeV/#it{c}); n#sigma_{e}^{TOF}", kTH2D, {{axisPtEl}, {axisNsig}});
     // ===== [pre-cut QA] END =====
 
+    // ===== [pre-cut QA 2D + species] BEGIN: correlations and MC-truth species, before trackSel =====
+    // 2D correlations (filled in both data and MC)
+    histos.add("hTpcNSigEta_noCut", "n#sigma_{e}^{TPC} vs #eta before track sel; #eta; n#sigma_{e}^{TPC}", kTH2D, {axisEta, axisNsig});                               // eta asymmetry
+    histos.add("hNClsCrossedRowsEta_noCut", "TPC crossed rows vs #eta before track sel; #eta; N_{crossed rows}^{TPC}", kTH2D, {axisEta, {200, 0, 200}});             // cluster diffusion (AN#1783 <Ncl> vs eta)
+    histos.add("hDcaXYIbClsIts_noCut", "DCA_{xy} vs ITS-IB clusters before track sel; N_{cls}^{ITS-IB}; DCA_{xy} (cm)", kTH2D, {{10, 0, 10}, axisTrackIp});          // d0 resolution vs IB requirement
+    histos.add("hTpcNSigNClsCrossedRows_noCut", "n#sigma_{e}^{TPC} vs crossed rows vs p_{T} before track sel; #it{p}_{T} (GeV/#it{c}); N_{crossed rows}^{TPC}; n#sigma_{e}^{TPC}", kTH3F, {axisPtEl, {80, 0, 160}, axisNsig}); // e/pi separation vs crossed rows (momentum-sliceable)
+    // MC-truth species (filled only in processMc) — reused from work/15 MCInformation_forEID
+    histos.add("hTpcNSigPt_noCut_Ele", "n#sigma_{e}^{TPC} truth e before track sel; #it{p}_{T} (GeV/#it{c}); n#sigma_{e}^{TPC}", kTH2D, {axisPtEl, axisNsig});
+    histos.add("hTpcNSigPt_noCut_Pi", "n#sigma_{e}^{TPC} truth #pi before track sel; #it{p}_{T} (GeV/#it{c}); n#sigma_{e}^{TPC}", kTH2D, {axisPtEl, axisNsig});
+    histos.add("hTpcNSigPt_noCut_K", "n#sigma_{e}^{TPC} truth K before track sel; #it{p}_{T} (GeV/#it{c}); n#sigma_{e}^{TPC}", kTH2D, {axisPtEl, axisNsig});
+    histos.add("hTpcNSigPt_noCut_Pro", "n#sigma_{e}^{TPC} truth p before track sel; #it{p}_{T} (GeV/#it{c}); n#sigma_{e}^{TPC}", kTH2D, {axisPtEl, axisNsig});
+    histos.add("hTpcNSigPt_noCut_Other", "n#sigma_{e}^{TPC} truth other before track sel; #it{p}_{T} (GeV/#it{c}); n#sigma_{e}^{TPC}", kTH2D, {axisPtEl, axisNsig});
+    histos.add("hDcaZBeauty_noCut", "DCA_{z} of beauty-decay electrons (truth) before track sel; DCA_{z} (cm); entries", kTH1D, {{600, -3, 3}}); // DCA_z signal-loss check
+    // ===== [pre-cut QA 2D + species] END =====
+
     // pid
     histos.add("hTofNSigPt", "", kTH2D, {{axisPtEl}, {axisNsig}});
     histos.add("hTofNSigPtQA", "", kTH2D, {{axisPtEl}, {axisNsig}});
@@ -462,6 +477,10 @@ struct HfTaskSingleElectron {
       histos.fill(HIST("hDcaZTrack_noCut"), track.dcaZ());
       histos.fill(HIST("hTpcNSigPt_noCut"), track.pt(), track.tpcNSigmaEl());
       histos.fill(HIST("hTofNSigPt_noCut"), track.pt(), track.tofNSigmaEl());
+      histos.fill(HIST("hTpcNSigEta_noCut"), track.eta(), track.tpcNSigmaEl());
+      histos.fill(HIST("hNClsCrossedRowsEta_noCut"), track.eta(), track.tpcNClsCrossedRows());
+      histos.fill(HIST("hDcaXYIbClsIts_noCut"), track.itsNClsInnerBarrel(), track.dcaXY());
+      histos.fill(HIST("hTpcNSigNClsCrossedRows_noCut"), track.pt(), track.tpcNClsCrossedRows(), track.tpcNSigmaEl());
       // ===== [pre-cut QA] END =====
 
       if (!trackSel(track)) {
@@ -541,6 +560,32 @@ struct HfTaskSingleElectron {
       histos.fill(HIST("hDcaZTrack_noCut"), track.dcaZ());
       histos.fill(HIST("hTpcNSigPt_noCut"), track.pt(), track.tpcNSigmaEl());
       histos.fill(HIST("hTofNSigPt_noCut"), track.pt(), track.tofNSigmaEl());
+      histos.fill(HIST("hTpcNSigEta_noCut"), track.eta(), track.tpcNSigmaEl());
+      histos.fill(HIST("hNClsCrossedRowsEta_noCut"), track.eta(), track.tpcNClsCrossedRows());
+      histos.fill(HIST("hDcaXYIbClsIts_noCut"), track.itsNClsInnerBarrel(), track.dcaXY());
+      histos.fill(HIST("hTpcNSigNClsCrossedRows_noCut"), track.pt(), track.tpcNClsCrossedRows(), track.tpcNSigmaEl());
+      // MC-truth species before trackSel (reused from work/15 MCInformation_forEID)
+      if (track.has_mcParticle()) {
+        auto const mcParticleNoCut = track.mcParticle();
+        int const absPdgNoCut = std::abs(mcParticleNoCut.pdgCode());
+        if (absPdgNoCut == kElectron) {
+          histos.fill(HIST("hTpcNSigPt_noCut_Ele"), track.pt(), track.tpcNSigmaEl());
+        } else if (absPdgNoCut == kPiPlus) {
+          histos.fill(HIST("hTpcNSigPt_noCut_Pi"), track.pt(), track.tpcNSigmaEl());
+        } else if (absPdgNoCut == kKPlus) {
+          histos.fill(HIST("hTpcNSigPt_noCut_K"), track.pt(), track.tpcNSigmaEl());
+        } else if (absPdgNoCut == kProton) {
+          histos.fill(HIST("hTpcNSigPt_noCut_Pro"), track.pt(), track.tpcNSigmaEl());
+        } else {
+          histos.fill(HIST("hTpcNSigPt_noCut_Other"), track.pt(), track.tpcNSigmaEl());
+        }
+        int mpdgNoCut{};
+        double mptNoCut{};
+        int const srcNoCut = getElecSource(track, mptNoCut, mpdgNoCut);
+        if (srcNoCut == DirectBeauty || srcNoCut == BeautyCharm) {
+          histos.fill(HIST("hDcaZBeauty_noCut"), track.dcaZ());
+        }
+      }
       // ===== [pre-cut QA] END =====
 
       if (!trackSel(track)) {
