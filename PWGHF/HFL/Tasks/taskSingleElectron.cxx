@@ -432,7 +432,7 @@ struct HfTaskSingleElectron {
     auto partMother = mcpart.template mothers_as<aod::McParticles>(); // first mother particle of electron
     auto partMotherCopy = partMother;                                 // copy of the first mother
     auto mctrack = partMother;                                        // will change all the time
-    if (partMother.size() == 0) { // electron without a stored mother: avoid front() on an empty span
+    if (partMother.size() == 0) {                                     // electron without a stored mother: avoid front() on an empty span
       return Else;
     }
 
